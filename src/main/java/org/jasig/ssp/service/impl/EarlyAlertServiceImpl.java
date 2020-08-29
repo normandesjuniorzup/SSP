@@ -24,10 +24,15 @@ import org.jasig.ssp.config.EarlyAlertResponseReminderRecipientsConfig;
 import org.jasig.ssp.dao.EarlyAlertDao;
 import org.jasig.ssp.factory.EarlyAlertSearchResultTOFactory;
 import org.jasig.ssp.model.*;
-import org.jasig.ssp.model.reference.*;
+import org.jasig.ssp.model.reference.Campus;
+import org.jasig.ssp.model.reference.ProgramStatus;
+import org.jasig.ssp.model.reference.StudentType;
 import org.jasig.ssp.security.SspUser;
 import org.jasig.ssp.service.*;
-import org.jasig.ssp.service.reference.*;
+import org.jasig.ssp.service.reference.ConfigService;
+import org.jasig.ssp.service.reference.MessageTemplateService;
+import org.jasig.ssp.service.reference.ProgramStatusService;
+import org.jasig.ssp.service.reference.StudentTypeService;
 import org.jasig.ssp.transferobject.EarlyAlertSearchResultTO;
 import org.jasig.ssp.transferobject.PagedResponse;
 import org.jasig.ssp.transferobject.form.EarlyAlertSearchForm;
@@ -82,12 +87,6 @@ public class EarlyAlertServiceImpl extends // NOPMD
     private transient MessageTemplateService messageTemplateService;
     //1
     @Autowired
-    private transient EarlyAlertReasonService earlyAlertReasonService;
-    //1
-    @Autowired
-    private transient EarlyAlertSuggestionService earlyAlertSuggestionService;
-    //1
-    @Autowired
     private transient PersonService personService;
     //1
     @Autowired
@@ -107,10 +106,12 @@ public class EarlyAlertServiceImpl extends // NOPMD
     //1
     @Autowired
     private transient EarlyAlertResponseReminderRecipientsConfig earReminderRecipientConfig;
-
     //1
     @Autowired
     private transient TemplateParameterFillerService templateParameterFillerService;
+
+    @Autowired
+    private transient EarlyAlertRule earlyAlertRule;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EarlyAlertServiceImpl.class);
 
@@ -216,60 +217,7 @@ public class EarlyAlertServiceImpl extends // NOPMD
 
     @Override
     public EarlyAlert save(@NotNull final EarlyAlert earlyAlert) throws ObjectNotFoundException {
-        final EarlyAlert current = getDao().get(earlyAlert.getId());
-
-        current.setCourseName(earlyAlert.getCourseName());
-        current.setCourseTitle(earlyAlert.getCourseTitle());
-        current.setEmailCC(earlyAlert.getEmailCC());
-        current.setCampus(earlyAlert.getCampus());
-        current.setEarlyAlertReasonOtherDescription(earlyAlert.getEarlyAlertReasonOtherDescription());
-        current.setComment(earlyAlert.getComment());
-        current.setClosedDate(earlyAlert.getClosedDate());
-
-        //1
-        if (earlyAlert.getClosedById() == null) {
-            current.setClosedBy(null);
-        }
-        //1
-        else {
-            current.setClosedBy(personService.get(earlyAlert.getClosedById()));
-        }
-
-        //1
-        if (earlyAlert.getPerson() == null) {
-            current.setPerson(null);
-        }
-        //1
-        else {
-            current.setPerson(personService.get(earlyAlert.getPerson().getId()));
-        }
-
-        //1
-        final Set<EarlyAlertReason> earlyAlertReasons = new HashSet<>();
-        //1
-        if (earlyAlert.getEarlyAlertReasons() != null) {
-            //1
-            for (final EarlyAlertReason reason : earlyAlert.getEarlyAlertReasons()) {
-                earlyAlertReasons.add(earlyAlertReasonService.load(reason.getId()));
-            }
-        }
-
-        current.setEarlyAlertReasons(earlyAlertReasons);
-
-
-        //1
-        final Set<EarlyAlertSuggestion> earlyAlertSuggestions = new HashSet<>();
-
-        //1
-        if (earlyAlert.getEarlyAlertSuggestions() != null) {
-            //1
-            for (final EarlyAlertSuggestion reason : earlyAlert.getEarlyAlertSuggestions()) {
-                earlyAlertSuggestions.add(earlyAlertSuggestionService.load(reason.getId()));
-            }
-        }
-
-        current.setEarlyAlertSuggestions(earlyAlertSuggestions);
-
+        final EarlyAlert current = earlyAlertRule.prepare(earlyAlert);
         return getDao().save(current);
     }
 
@@ -735,9 +683,7 @@ public class EarlyAlertServiceImpl extends // NOPMD
      * @throws ValidationException
      */
     private void sendMessageToAdvisor(@NotNull final EarlyAlert earlyAlert, final String emailCC) throws ObjectNotFoundException, ValidationException {
-
         checkNotNull(earlyAlert, new IllegalArgumentException("Early alert was missing."));
-
         checkNotNull(earlyAlert.getPerson(), new IllegalArgumentException("EarlyAlert Person is missing."));
 
         final Person person = earlyAlert.getPerson().getCoach();
