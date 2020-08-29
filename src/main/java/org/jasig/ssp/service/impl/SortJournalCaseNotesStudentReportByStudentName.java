@@ -4,8 +4,9 @@ import org.jasig.ssp.transferobject.reports.JournalCaseNotesStudentReportTO;
 
 import java.util.Comparator;
 
-public class JournalCaseNotesStudentReportTOComparator implements Comparator<JournalCaseNotesStudentReportTO> {
+public class SortJournalCaseNotesStudentReportByStudentName implements Comparator<JournalCaseNotesStudentReportTO> {
 
+    @Override
     public int compare(JournalCaseNotesStudentReportTO p1, JournalCaseNotesStudentReportTO p2) {
 
         int value = p1.getLastName().compareToIgnoreCase(p2.getLastName());
