@@ -17,19 +17,23 @@ import java.util.Set;
 @Service
 public class EarlyAlertRule {
 
+    //1
     @Autowired
     private transient EarlyAlertDao dao;
 
+    //1
     @Autowired
     private transient PersonService personService;
 
+    //1
     @Autowired
     private transient EarlyAlertReasonService earlyAlertReasonService;
 
+    //1
     @Autowired
     private transient EarlyAlertSuggestionService earlyAlertSuggestionService;
 
-    public EarlyAlert prepare(final EarlyAlert earlyAlert) throws ObjectNotFoundException {
+    public EarlyAlert prepareToSave(final EarlyAlert earlyAlert) throws ObjectNotFoundException {
         final EarlyAlert current = dao.get(earlyAlert.getId());
 
         current.setCourseName(earlyAlert.getCourseName());
