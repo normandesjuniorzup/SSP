@@ -18,7 +18,6 @@
  */
 package org.jasig.ssp.service.impl; // NOPMD by jon.adams
 
-import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
 import org.jasig.ssp.dao.EarlyAlertDao;
 import org.jasig.ssp.factory.EarlyAlertSearchResultTOFactory;
@@ -75,9 +74,6 @@ public class EarlyAlertServiceImpl extends // NOPMD
     private transient ConfigService configService;
     //1
     @Autowired
-    private transient EarlyAlertRoutingService earlyAlertRoutingService;
-    //1
-    @Autowired
     private transient MessageService messageService;
     //1
     @Autowired
@@ -109,6 +105,9 @@ public class EarlyAlertServiceImpl extends // NOPMD
     //1
     @Autowired
     private transient EarlyAlertReminderNotificationSender earlyAlertReminderNotificationSender;
+    //1
+    @Autowired
+    private transient MessageAdvisor messageAdvisor;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EarlyAlertServiceImpl.class);
 
@@ -519,84 +518,7 @@ public class EarlyAlertServiceImpl extends // NOPMD
      * @throws ValidationException
      */
     private void sendMessageToAdvisor(@NotNull final EarlyAlert earlyAlert, final String emailCC) throws ObjectNotFoundException, ValidationException {
-        checkNotNull(earlyAlert, new IllegalArgumentException("Early alert was missing."));
-        checkNotNull(earlyAlert.getPerson(), new IllegalArgumentException("EarlyAlert Person is missing."));
-
-        final Person person = earlyAlert.getPerson().getCoach();
-
-        //1
-        final SubjectAndBody subjAndBody = messageTemplateService.createEarlyAlertAdvisorConfirmationMessage(fillTemplateParameters(earlyAlert));
-
-        Set<String> watcherEmailAddresses = new HashSet<>(earlyAlert.getPerson().getWatcherEmailAddresses());
-        //1
-        if (emailCC != null && !emailCC.isEmpty()) {
-            watcherEmailAddresses.add(emailCC);
-        }
-        //1
-        if (person == null) {
-            LOGGER.warn("Student {} had no coach when EarlyAlert {} was"
-                            + " created. Unable to send message to coach.",
-                    earlyAlert.getPerson(), earlyAlert);
-        }
-        //1
-        else {
-            //1
-            // Create and queue the message
-            final Message message = messageService.createMessage(person, org.springframework.util.StringUtils.arrayToCommaDelimitedString(watcherEmailAddresses
-                    .toArray(new String[watcherEmailAddresses.size()])), subjAndBody);
-            LOGGER.info("Message {} created for EarlyAlert {}", message, earlyAlert);
-        }
-
-        // Send same message to all applicable Campus Early Alert routing
-        // entries
-        final PagingWrapper<EarlyAlertRouting> routes = earlyAlertRoutingService
-                .getAllForCampus(earlyAlert.getCampus(), new SortingAndPaging(
-                        ObjectStatus.ACTIVE));
-
-        //1
-        if (routes.getResults() > 0) {
-            final ArrayList<String> alreadySent = Lists.newArrayList();
-
-            //1
-            for (final EarlyAlertRouting route : routes.getRows()) {
-                // Check that route applies
-
-                checkNotNull(route.getEarlyAlertReason(), new ObjectNotFoundException(
-                        "EarlyAlertRouting missing EarlyAlertReason.", "EarlyAlertReason"));
-
-                //1
-                // Only routes that are for any of the Reasons in this EarlyAlert should be applied.
-                if ((earlyAlert.getEarlyAlertReasons() == null) || !earlyAlert.getEarlyAlertReasons().contains(route.getEarlyAlertReason())) {
-                    continue;
-                }
-
-                // Send e-mail to specific person
-                final Person to = route.getPerson();
-                //1
-                if (to != null && StringUtils.isNotBlank(to.getPrimaryEmailAddress())) {
-                    //check if this alert has already been sent to this recipient, if so skip
-                    //1
-                    if (alreadySent.contains(route.getPerson().getPrimaryEmailAddress())) {
-                        continue;
-                    }
-                    //1
-                    else {
-                        alreadySent.add(route.getPerson().getPrimaryEmailAddress());
-                    }
-
-                    final Message message = messageService.createMessage(to, null, subjAndBody);
-                    LOGGER.info("Message {} for EarlyAlert {} also routed to {}", new Object[]{message, earlyAlert, to});
-                }
-
-                // Send e-mail to a group
-                //1
-                if (!StringUtils.isEmpty(route.getGroupName()) && !StringUtils.isEmpty(route.getGroupEmail())) {
-                    final Message message = messageService.createMessage(route.getGroupEmail(), null, subjAndBody);
-                    LOGGER.info("Message {} for EarlyAlert {} also routed to {}", new Object[]{message, earlyAlert, // NOPMD
-                            route.getGroupEmail()});
-                }
-            }
-        }
+        messageAdvisor.sendMessageToAdvisor(earlyAlert, emailCC);
     }
 
 }
