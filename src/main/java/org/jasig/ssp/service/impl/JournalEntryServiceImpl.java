@@ -53,15 +53,19 @@ import java.util.UUID;
 @Service
 @Transactional
 public class JournalEntryServiceImpl
+		//1
+		//1
 		extends AbstractRestrictedPersonAssocAuditableService<JournalEntry>
+		//1
 		implements JournalEntryService {
 
+	//1
 	@Autowired
 	private transient JournalEntryDao dao;
-
+	//1
 	@Autowired
 	private transient PersonProgramStatusService personProgramStatusService;
-	
+	//1
 	@Autowired
 	private transient PersonDao personDao;
 
@@ -72,6 +76,8 @@ public class JournalEntryServiceImpl
 
 	@Override
 	public JournalEntry create(final JournalEntry obj)
+		//1
+		//1
 			throws ObjectNotFoundException, ValidationException {
 		final JournalEntry journalEntry = getDao().save(obj);
 		checkForTransition(journalEntry);
@@ -89,20 +95,21 @@ public class JournalEntryServiceImpl
 	private void checkForTransition(final JournalEntry journalEntry)
 			throws ObjectNotFoundException, ValidationException {
 		// search for a JournalStep that indicates a transition
+		//1
+		//1
 		for (final JournalEntryDetail detail : journalEntry
 				.getJournalEntryDetails()) {
-			if (detail.getJournalStepJournalStepDetail().getJournalStep()
-					.isUsedForTransition()) {
+			//1
+			if (detail.getJournalStepJournalStepDetail().getJournalStep().isUsedForTransition()) {
 				// is used for transition, so attempt to set program status
-				personProgramStatusService.setTransitionForStudent(journalEntry
-						.getPerson());
-
+				personProgramStatusService.setTransitionForStudent(journalEntry.getPerson());
 				// exit early because no need to loop through others
 				return;
 			}
 		}
 	}
-	
+
+	//1
 	@Override
 	public Long getCountForCoach(Person coach, Date createDateFrom, Date createDateTo, List<UUID> studentTypeIds){
 		return dao.getJournalCountForCoach(coach, createDateFrom, createDateTo, studentTypeIds);
@@ -112,43 +119,58 @@ public class JournalEntryServiceImpl
 	public Long getStudentCountForCoach(Person coach, Date createDateFrom, Date createDateTo, List<UUID> studentTypeIds) {
 		return dao.getStudentJournalCountForCoach(coach, createDateFrom, createDateTo, studentTypeIds);
 	}
-	
+
+	//1
+	//1
+	//1
 	@Override
-	public PagingWrapper<EntityStudentCountByCoachTO> getStudentJournalCountForCoaches(EntityCountByCoachSearchForm form){
+	public PagingWrapper<EntityStudentCountByCoachTO> getStudentJournalCountForCoaches(EntityCountByCoachSearchForm form) {
 		return dao.getStudentJournalCountForCoaches(form);
 	}
-	
+
+	//1
+	//1
+	//1
 	@Override
 	public PagingWrapper<JournalStepStudentReportTO> getJournalStepStudentReportTOsFromCriteria(JournalStepSearchFormTO personSearchForm,  
-			SortingAndPaging sAndP){
-		return dao.getJournalStepStudentReportTOsFromCriteria(personSearchForm,  
-				sAndP);
+			SortingAndPaging sAndP) {
+		return dao.getJournalStepStudentReportTOsFromCriteria(personSearchForm, sAndP);
 	}
-	
- 	@Override
- 	public List<JournalCaseNotesStudentReportTO> getJournalCaseNoteStudentReportTOsFromCriteria(JournalStepSearchFormTO personSearchForm, SortingAndPaging sAndP) throws ObjectNotFoundException{
- 		 final List<JournalCaseNotesStudentReportTO> personsWithJournalEntries = dao.getJournalCaseNoteStudentReportTOsFromCriteria(personSearchForm, sAndP);
- 		 final Map<String, JournalCaseNotesStudentReportTO> map = new HashMap<String, JournalCaseNotesStudentReportTO>();
 
+	//1
+ 	@Override
+ 	public List<JournalCaseNotesStudentReportTO> getJournalCaseNoteStudentReportTOsFromCriteria(JournalStepSearchFormTO personSearchForm, SortingAndPaging sAndP)
+			throws ObjectNotFoundException {
+ 		 final List<JournalCaseNotesStudentReportTO> personsWithJournalEntries = dao.getJournalCaseNoteStudentReportTOsFromCriteria(personSearchForm, sAndP);
+ 		 final Map<String, JournalCaseNotesStudentReportTO> map = new HashMap<>();
+
+ 		 //1
  		 for(JournalCaseNotesStudentReportTO entry:personsWithJournalEntries){
  			 map.put(entry.getSchoolId(), entry);
  		 }
 
  		 final SortingAndPaging personSAndP = SortingAndPaging.createForSingleSortAll(ObjectStatus.ACTIVE, "lastName", "DESC") ;
+ 		 //1
  		 final PagingWrapper<BaseStudentReportTO> persons = personDao.getStudentReportTOs(personSearchForm, personSAndP);
- 		
+
+ 		 //1
  		 if (persons == null) {
  			 return personsWithJournalEntries;
  		 }
 
+ 		 //1
  		 for (BaseStudentReportTO person:persons) {
+ 		 	//1
 			 if (!map.containsKey(person.getSchoolId()) && StringUtils.isNotBlank(person.getCoachSchoolId())) {
 				 boolean addStudent = true;
+				 //1
 				 if (personSearchForm.getJournalSourceIds()!=null) {
+				 	//1
 					if (getDao().getJournalCountForPersonForJournalSourceIds(person.getId(), personSearchForm.getJournalSourceIds()) == 0) {
 						addStudent = false;
 					}
 				 }
+				 //1
 			 	 if (addStudent) {
 					 final JournalCaseNotesStudentReportTO entry = new JournalCaseNotesStudentReportTO(person);
 					 personsWithJournalEntries.add(entry);
@@ -162,28 +184,8 @@ public class JournalEntryServiceImpl
  	}
  		 
 	private static void sortByStudentName(List<JournalCaseNotesStudentReportTO> toSort) {
-		Collections.sort(toSort,  new Comparator<JournalCaseNotesStudentReportTO>() {
-	        public int compare(JournalCaseNotesStudentReportTO p1, JournalCaseNotesStudentReportTO p2) {
-	        	
-	        	int value = p1.getLastName().compareToIgnoreCase(
-	     	                    p2.getLastName());
-	        	if(value != 0)
-	        		return value;
-	        	
-	        	value = p1.getFirstName().compareToIgnoreCase(
- 	                    p2.getFirstName());
-		       if(value != 0)
-        		 return value;
-		       if(p1.getMiddleName() == null && p2.getMiddleName() == null)
-		    	   return 0;
-		       if(p1.getMiddleName() == null)
-		    	   return -1;
-		       if(p2.getMiddleName() == null)
-		    	   return 1;
-		       return p1.getMiddleName().compareToIgnoreCase(
-	                    p2.getMiddleName());
-	        }
-	    });
+		//1
+		Collections.sort(toSort, new JournalCaseNotesStudentReportTOComparator());
 	}
 
 }
