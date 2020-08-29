@@ -144,8 +144,7 @@ public class EarlyAlertServiceImpl extends // NOPMD
         final EarlyAlert saved = getDao().save(earlyAlert);
 
         // Send e-mail to assigned advisor (coach)
-        sendMessageToAdvisor(saved, earlyAlert.getEmailCC());
-
+        messageAdvisor.sendMessageToAdvisor(earlyAlert, earlyAlert.getEmailCC());
         // Send e-mail CONFIRMATION to faculty
         sendConfirmationMessageToFaculty(saved);
 
@@ -507,18 +506,6 @@ public class EarlyAlertServiceImpl extends // NOPMD
 
             person.setStudentType(studentType);
         }
-    }
-
-    /**
-     * Send e-mail ({@link Message}) to the assigned advisor for the student.
-     *
-     * @param earlyAlert Early Alert
-     * @param emailCC    Email address to also CC this message
-     * @throws ObjectNotFoundException
-     * @throws ValidationException
-     */
-    private void sendMessageToAdvisor(@NotNull final EarlyAlert earlyAlert, final String emailCC) throws ObjectNotFoundException, ValidationException {
-        messageAdvisor.sendMessageToAdvisor(earlyAlert, emailCC);
     }
 
 }
