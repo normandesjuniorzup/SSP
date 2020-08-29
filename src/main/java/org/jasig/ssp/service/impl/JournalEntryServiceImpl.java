@@ -27,11 +27,7 @@ import org.jasig.ssp.service.AbstractRestrictedPersonAssocAuditableService;
 import org.jasig.ssp.service.JournalEntryService;
 import org.jasig.ssp.service.ObjectNotFoundException;
 import org.jasig.ssp.service.PersonProgramStatusService;
-import org.jasig.ssp.transferobject.reports.EntityCountByCoachSearchForm;
-import org.jasig.ssp.transferobject.reports.EntityStudentCountByCoachTO;
-import org.jasig.ssp.transferobject.reports.JournalCaseNotesStudentReportTO;
-import org.jasig.ssp.transferobject.reports.JournalStepSearchFormTO;
-import org.jasig.ssp.transferobject.reports.JournalStepStudentReportTO;
+import org.jasig.ssp.transferobject.reports.*;
 import org.jasig.ssp.util.sort.PagingWrapper;
 import org.jasig.ssp.util.sort.SortingAndPaging;
 import org.jasig.ssp.web.api.validation.ValidationException;
@@ -42,6 +38,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+
+import static org.jasig.ssp.service.impl.ThrowingConsumer.*;
 
 //1
 //1
@@ -83,17 +81,15 @@ public class JournalEntryServiceImpl extends AbstractRestrictedPersonAssocAudita
 
     private void checkForTransition(final JournalEntry journalEntry) throws ObjectNotFoundException, ValidationException {
         // search for a JournalStep that indicates a transition
-        //1
-        //1
-        for (final JournalEntryDetail detail : journalEntry.getJournalEntryDetails()) {
-            //1
-            if (detail.getJournalStepJournalStepDetail().getJournalStep().isUsedForTransition()) {
-                // is used for transition, so attempt to set program status
-                personProgramStatusService.setTransitionForStudent(journalEntry.getPerson());
-                // exit early because no need to loop through others
-                return;
-            }
-        }
+
+        journalEntry.getJournalEntryDetails()
+                .stream()
+                //1
+                .filter(JournalEntryDetail::isUsedForTransition)
+                .findFirst()
+                //1
+                //1
+                .ifPresent(unchecked((detail) -> personProgramStatusService.setTransitionForStudent(journalEntry.getPerson())));
     }
 
     //1
