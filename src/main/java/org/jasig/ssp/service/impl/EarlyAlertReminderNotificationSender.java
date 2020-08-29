@@ -1,7 +1,6 @@
 package org.jasig.ssp.service.impl;
 
 import com.google.common.collect.Lists;
-import org.apache.commons.lang.StringUtils;
 import org.jasig.ssp.config.EarlyAlertResponseReminderRecipientsConfig;
 import org.jasig.ssp.dao.EarlyAlertDao;
 import org.jasig.ssp.model.EarlyAlert;
@@ -140,18 +139,21 @@ public class EarlyAlertReminderNotificationSender {
             }
             List<WatchStudent> watchers = earlyAlert.getPerson().getWatchers();
             //1
-            for (WatchStudent watcher : watchers) {
+            if (watchers != null) {
                 //1
-                if (easByCoach.containsKey(watcher.getPerson().getId())) {
-                    final List<EarlyAlertMessageTemplateTO> coachEarlyAlerts = easByCoach.get(watcher.getPerson().getId());
-                    coachEarlyAlerts.add(createEarlyAlertTemplateTO(earlyAlert));
-                }
-                //1
-                else {
-                    coaches.put(watcher.getPerson().getId(), watcher.getPerson());
-                    final ArrayList<EarlyAlertMessageTemplateTO> eam = Lists.newArrayList();
-                    eam.add(createEarlyAlertTemplateTO(earlyAlert)); // add separately from newArrayList() call else list will be sized to 1
-                    easByCoach.put(watcher.getPerson().getId(), eam);
+                for (WatchStudent watcher : watchers) {
+                    //1
+                    if (easByCoach.containsKey(watcher.getPerson().getId())) {
+                        final List<EarlyAlertMessageTemplateTO> coachEarlyAlerts = easByCoach.get(watcher.getPerson().getId());
+                        coachEarlyAlerts.add(createEarlyAlertTemplateTO(earlyAlert));
+                    }
+                    //1
+                    else {
+                        coaches.put(watcher.getPerson().getId(), watcher.getPerson());
+                        final ArrayList<EarlyAlertMessageTemplateTO> eam = Lists.newArrayList();
+                        eam.add(createEarlyAlertTemplateTO(earlyAlert)); // add separately from newArrayList() call else list will be sized to 1
+                        easByCoach.put(watcher.getPerson().getId(), eam);
+                    }
                 }
             }
         }
