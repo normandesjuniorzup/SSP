@@ -54,7 +54,3 @@ SSP uses Maven for its project configuration and build system and Liquibase for 
 .gitignore - files/directories for git to ignore  
 README - This document  
 
-
-
-
-
